@@ -685,3 +685,6 @@ def get_file_rows_c(obj):
             return cfile
     except:
         return False
+
+
+dbapp = dbapp
