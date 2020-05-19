@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-import helper_db
+from . import helper_db
