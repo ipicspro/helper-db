@@ -1,0 +1,7 @@
+env/
+.vscode/
+.eggs/
+build
+helper_db.egg-info/
+test.py
+notes.txt
