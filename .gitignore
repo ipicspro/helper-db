@@ -4,4 +4,5 @@ env/
 build
 helper_db.egg-info/
 test.py
+settings.py
 notes.txt

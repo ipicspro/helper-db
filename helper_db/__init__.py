@@ -1,3 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from . import dbapp
+from . import helper_db
+
+
+dbapp = helper_db.dbapp
