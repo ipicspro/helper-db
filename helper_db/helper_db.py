@@ -25,11 +25,11 @@ class dbapp():
         dbname: web|scrap
         DictCursor=True - to give col names with result
         '''
-        # if settings:
-            # try: from .settings import settings
-            # except: pass
-            # try: from settings import settings
-            # except: pass            
+        # if not settings:
+        #     try: from .settings import settings
+        #     except: pass
+        #     try: from settings import settings
+        #     except: pass
         if settings:
             self.dbname = settings.DATABASES[dbset]['NAME']
             self.user = settings.DATABASES[dbset]['USER']
@@ -339,7 +339,7 @@ class dbapp():
         res = self.db.fetchall()
         return res
 
-    def get_all_join(self, table_name, name_column, conn_table, conn_column, distinct=False, limit=None):
+    def get_all_join(self, table_name, name_column, conn_table, conn_column, distinct=False, limit=None, order=None, asc=None):
         '''
         get from table some results, where
         name_column - what columns to return,
@@ -350,14 +350,16 @@ class dbapp():
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
+        order_str = (' ORDER by ' + str(order)) if order else ''
+        order_str = (order_str + ' ' + str(asc)) if asc else ''
         self.db.execute(
             'SELECT ' + dist + name_column + ' FROM ' + table_name 
-            + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' + limit_str
+            + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' + order_str + limit_str
             )
         res = self.db.fetchall()
         return res
 
-    def get_all_join2(self, table_name, name_column, conn_table, conn_column, conn_table2, conn_column2, distinct=False, limit=None):
+    def get_all_join2(self, table_name, name_column, conn_table, conn_column, conn_table2, conn_column2, distinct=False, limit=None, order=None, asc=None):
         '''
         get from table some results, where
         name_column - what columns to return,
@@ -368,15 +370,17 @@ class dbapp():
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
+        order_str = (' ORDER by ' + str(order)) if order else ''
+        order_str = (order_str + ' ' + str(asc)) if asc else ''
         self.db.execute(
             'SELECT ' + dist + name_column + ' FROM ' + table_name 
             + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id'
-            + ' JOIN ' + conn_table2 + ' ON ' + table_name + '.' + conn_column2 + ' = ' + conn_table2 + '.id' + limit_str
+            + ' JOIN ' + conn_table2 + ' ON ' + table_name + '.' + conn_column2 + ' = ' + conn_table2 + '.id' + order_str + limit_str
             )
         res = self.db.fetchall()
         return res
 
-    def get_all_join_condition(self, table_name, name_column, conn_table, conn_column, cond_column, cond_value, distinct=False, limit=None):
+    def get_all_join_condition(self, table_name, name_column, conn_table, conn_column, cond_column, cond_value, distinct=False, limit=None, order=None, asc=None):
         '''
         get from table some results, where
         name_column - what columns to return,
@@ -389,24 +393,26 @@ class dbapp():
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
+        order_str = (' ORDER by ' + str(order)) if order else ''
+        order_str = (order_str + ' ' + str(asc)) if asc else ''
         row = cond_value
         if type(row) == list or type(row) == dict:
             col, col_values = self.get_cols_for_select([row])
             self.db.execute(
                 'SELECT ' + dist + name_column + ' FROM ' + table_name 
                 + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' 
-                + ' WHERE ' + col, col_values + limit_str
+                + ' WHERE ' + col + order_str + limit_str, col_values
                 )
         else:
             self.db.execute(
                 'SELECT ' + dist + name_column + ' FROM ' + table_name 
                 + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' 
-                + ' WHERE ' + cond_column + '=%s' + limit_str, (cond_value,)
+                + ' WHERE ' + cond_column + '=%s' + order_str + limit_str, (cond_value,)
                 )
         res = self.db.fetchall()
         return res
 
-    def get_all_join2_condition(self, table_name, name_column, conn_table, conn_column, conn_table2, conn_column2, cond_column, cond_value, distinct=False, limit=None):
+    def get_all_join2_condition(self, table_name, name_column, conn_table, conn_column, conn_table2, conn_column2, cond_column, cond_value, distinct=False, limit=None, order=None, asc=None):
         '''
         get from table some results, where
         name_column - what columns to return,
@@ -419,6 +425,8 @@ class dbapp():
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
+        order_str = (' ORDER by ' + str(order)) if order else ''
+        order_str = (order_str + ' ' + str(asc)) if asc else ''
         row = cond_value
         if type(row) == list or type(row) == dict:
             col, col_values = self.get_cols_for_select([row])
@@ -426,14 +434,14 @@ class dbapp():
                 'SELECT ' + dist + name_column + ' FROM ' + table_name 
                 + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' 
                 + ' JOIN ' + conn_table2 + ' ON ' + table_name + '.' + conn_column2 + ' = ' + conn_table2 + '.id' 
-                + ' WHERE ' + col, col_values + limit_str
+                + ' WHERE ' + col + order_str + limit_str, col_values
                 )
         else:
             self.db.execute(
                 'SELECT ' + dist + name_column + ' FROM ' + table_name 
                 + ' JOIN ' + conn_table + ' ON ' + table_name + '.' + conn_column + ' = ' + conn_table + '.id' 
                 + ' JOIN ' + conn_table2 + ' ON ' + table_name + '.' + conn_column2 + ' = ' + conn_table2 + '.id' 
-                + ' WHERE ' + cond_column + '=%s' + limit_str, (cond_value,)
+                + ' WHERE ' + cond_column + '=%s' + order_str + limit_str, (cond_value,)
                 )
         res = self.db.fetchall()
         return res
@@ -685,6 +693,3 @@ def get_file_rows_c(obj):
             return cfile
     except:
         return False
-
-
-# dbapp = dbapp
