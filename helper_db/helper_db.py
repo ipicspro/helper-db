@@ -5,7 +5,8 @@ import time
 import MySQLdb as Database
 import ipaddress
 
-
+# http://mysql-python.sourceforge.net/MySQLdb.html#connection-objects
+# https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlconnection-ping.html
 class dbapp():
     '''
     mysql handler django db
@@ -49,12 +50,59 @@ class dbapp():
             #     self.db = self.conn.cursor()
 
     def open(self):
-        self.conn = Database.connect(user=self.user, passwd=self.passwd, host=self.host, db=self.dbname, port=int(self.port), init_command=self.init_command, use_unicode=self.use_unicode)
+        i = 0
+        num = 30
+        while i < num:
+            i += 1
+            try:
+                self.conn = Database.connect(user=self.user, passwd=self.passwd, host=self.host, db=self.dbname, port=int(self.port), init_command=self.init_command, use_unicode=self.use_unicode)
+                break
+            except:
+                time.sleep(60)
+                continue
+
+            return False
+
         self.conn.set_character_set(self.set_character_set)
+
         if self.DictCursor:
             self.db = self.conn.cursor(Database.cursors.DictCursor)
         else:
             self.db = self.conn.cursor()
+
+
+    def check_connection(self):
+        '''
+        check connection & connect if possible using some approches
+        '''
+        # check if connected
+        i = 0
+        num = 30
+        while i < num:
+            i += 1
+            try:
+                self.conn.ping(True)
+                return True
+            except:
+                time.sleep(60)
+                continue
+
+            return False
+
+        # check if opened
+        if not self.conn.open:
+            i = 0
+            num = 3
+            while i < num:
+                i += 1
+                try:
+                    self.open()
+                except:
+                    time.sleep(10)
+                    continue
+                if self.conn.open: return True
+            return False
+        else: return True
 
 
     def check_db(self, create=None):
@@ -73,6 +121,7 @@ class dbapp():
         '''
         raw sql request
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         if not raw: return False
         res = None
@@ -90,6 +139,7 @@ class dbapp():
             in order of columns in db
             columns = []
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         cols = self.get_cols_multi(columns)
         for r in rows:
@@ -103,6 +153,7 @@ class dbapp():
             check_field - field in which checking (if the value is already exist), 
                         - as string
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col, col_values = self.get_cols(rows)
         existed_values = []
@@ -161,6 +212,7 @@ class dbapp():
             row is dictionary {'column': 'value', ...}
             check_field is a field with which compare if it is already there
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         rid = None
         try:
@@ -206,6 +258,7 @@ class dbapp():
             item_update: {'colunm': 'value'} item to update
             conditions: {'colunm': 'value', ...} conditions
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col_name_update, col_value_update = self.get_set([item_update])
         col_value_cond = ()
@@ -225,6 +278,7 @@ class dbapp():
             item_update: {'colunm': 'value'} item to update
             conditions: {'colunm': 'value', ...}
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col_name_update, col_value_update = self.get_set([item_update])
         col_value_cond = ()
@@ -242,6 +296,7 @@ class dbapp():
             item_update: {'colunm': 'value'} item to update
             conditions: {'colunm': list(1,2,3,'qwerty'), ...}
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col_name_update, col_value_update = self.get_set([item_update])
         col_value_cond = ()
@@ -272,6 +327,7 @@ class dbapp():
             column - column where rows items are ex. 'id'
             rows - list of tuples [(1,), (2,), ...]
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         for r in row_conditions:
             col_name_cond, col_value_cond = self.get_cols_for_select([r])
@@ -283,6 +339,7 @@ class dbapp():
         remove item_remove in table_name in db, where:
             row_conditions: {'colunm': 'value', ...} conditions of the row to remove
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col_name_cond, col_value_cond = self.get_cols_for_select([row_conditions])
         self.db.execute('DELETE FROM ' + table_name + ' WHERE ' + col_name_cond, col_value_cond)
@@ -298,6 +355,7 @@ class dbapp():
         order - provide column name to have ordered
         asc - ASC or DESC order
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
@@ -326,6 +384,7 @@ class dbapp():
         order - provide column name to have ordered
         asc - ASC or DESC order
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         limit_str = ' LIMIT ' + str(limit) if limit else ''
         order_str = (' ORDER by ' + str(order)) if order else ''
@@ -347,6 +406,7 @@ class dbapp():
         conn_column - name of column to JOIN,
         distinct - to get unique values
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
@@ -367,6 +427,7 @@ class dbapp():
         conn_column - name of column to JOIN,
         distinct - to get unique values
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
@@ -390,6 +451,7 @@ class dbapp():
         cond_value - value of condition
         distinct - to get unique values
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
@@ -422,6 +484,7 @@ class dbapp():
         cond_value - value of condition {'col': ''}
         distinct - to get unique values
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         dist = 'DISTINCT ' if distinct else ''
         limit_str = ' LIMIT ' + str(limit) if limit else ''
@@ -453,6 +516,7 @@ class dbapp():
         column_date - name of column with date
         point_date - date after which to request
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         limit_str = ' LIMIT ' + str(limit) if limit else ''
         self.db.execute('SELECT ' + name_column + ' FROM ' + table_name + ' WHERE ' + column_date + ' > %s ' + limit_str, (point_date,))
@@ -468,6 +532,7 @@ class dbapp():
             name_value - colunms in structure to use with WHERE (only if there is some value)
             row - filter with it's values,
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         limit_str = ' LIMIT ' + str(limit) if limit else ''
         if type(row) == list or type(row) == dict:
@@ -486,6 +551,7 @@ class dbapp():
         row - item's value
         return ids of found items
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         limit_str = ' LIMIT ' + str(limit) if limit else ''
         if type(row) == list or type(row) == dict:
@@ -612,11 +678,13 @@ class dbapp():
         return (col[:-5], tuple(col_values))
 
     def commit(self):
+        if not self.check_connection(): return False
         if not self.db: return False
         self.conn.commit()
         self.conn.close()
 
     def close(self):
+        if not self.check_connection(): return False
         if not self.db: return False
         self.conn.close()
 
@@ -625,6 +693,7 @@ class dbapp():
         delete all from table:
         table_name - table name current
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('DELETE FROM ' + table_name)
         self.conn.commit()
@@ -635,6 +704,7 @@ class dbapp():
         table_name - table name current
         conditions - dict {'col_name': [a,b,c...]}
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         col, col_values = '', ''
         if conditions:
@@ -649,6 +719,7 @@ class dbapp():
         table_name - table name current
         table_name_new - table name new
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('RENAME TABLE ' + table_name + ' TO ' + table_name_new)
         self.conn.commit()
@@ -658,6 +729,7 @@ class dbapp():
         rename table:
         table_name - table name to drop
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('DROP TABLE ' + table_name)
         self.conn.commit()
@@ -669,6 +741,7 @@ class dbapp():
         column_cur - current name
         column_new - new name
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('ALTER TABLE ' + table_name + ' RENAME COLUMN ' + column_cur + ' TO ' + column_new)
         self.conn.commit()
@@ -679,6 +752,7 @@ class dbapp():
         table_name - table name
         column_cur - column name
         '''
+        if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('ALTER TABLE ' + table_name + ' DROP COLUMN ' + column_name)
         self.conn.commit()
