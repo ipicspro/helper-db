@@ -117,7 +117,7 @@ class dbapp():
             self.db.execute('CREATE TABLE IF NOT EXISTS queue (id INT(11) AUTO_INCREMENT PRIMARY KEY, url_id INT(11) NOT NULL, url VARCHAR(255), company_id INT(11) NOT NULL, menu_type INT(11), url_type INT(11), open_hours VARCHAR(64), lng VARCHAR(3), status BOOLEAN NOT NULL DEFAULT 0)')
         self.conn.commit()
 
-    def raw(self, raw):
+    def raw(self, raw, prms=None):
         '''
         raw sql request
         '''
@@ -125,12 +125,16 @@ class dbapp():
         if not self.db: return False
         if not raw: return False
         res = None
-        self.db.execute(raw)
+        if prms: self.db.execute(raw, prms)
+        else: self.db.execute(raw)
         if 'SELECT' in raw:
             res = self.db.fetchall()
+        elif 'INSERT' in raw or 'UPDATE' in raw:
+            res = self.db.lastrowid
+
         self.conn.commit()
         if res: return res
-        else: return True
+        else: return ()
 
     def put_multi(self, table_name, columns, rows):
         '''
