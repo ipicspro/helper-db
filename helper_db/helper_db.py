@@ -129,6 +129,7 @@ class dbapp():
         else: self.db.execute(raw)
         if 'SELECT' in raw:
             res = self.db.fetchall()
+            commit = False
         elif 'INSERT' in raw or 'UPDATE' in raw:
             res = self.db.lastrowid
 
