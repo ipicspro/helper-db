@@ -117,7 +117,7 @@ class dbapp():
             self.db.execute('CREATE TABLE IF NOT EXISTS queue (id INT(11) AUTO_INCREMENT PRIMARY KEY, url_id INT(11) NOT NULL, url VARCHAR(255), company_id INT(11) NOT NULL, menu_type INT(11), url_type INT(11), open_hours VARCHAR(64), lng VARCHAR(3), status BOOLEAN NOT NULL DEFAULT 0)')
         self.conn.commit()
 
-    def raw(self, raw, prms=None):
+    def raw(self, raw, prms=None, commit=True):
         '''
         raw sql request
         '''
@@ -132,11 +132,11 @@ class dbapp():
         elif 'INSERT' in raw or 'UPDATE' in raw:
             res = self.db.lastrowid
 
-        self.conn.commit()
+        if commit: self.conn.commit()
         if res: return res
         else: return ()
 
-    def put_multi(self, table_name, columns, rows):
+    def put_multi(self, table_name, columns, rows, commit=True):
         '''
         insert list into table in db with single condition, where:
             rows - list of tuple [(1,'abc'), (2,'qwe') ...]
@@ -148,9 +148,9 @@ class dbapp():
         cols = self.get_cols_multi(columns)
         for r in rows:
             self.db.execute('INSERT INTO ' + table_name + ' (' + ', '.join(columns) + ') VALUES (' + cols + ')', tuple(r))  # json.dumps(rows)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def put_list(self, table_name, rows, check_field=None, opt=False):
+    def put_list(self, table_name, rows, check_field=None, opt=False, commit=True):
         '''
         insert list into table in db with single condition, where:
             rows - list of dictionaries [{'column': 'value', ...}, ...]
@@ -208,9 +208,9 @@ class dbapp():
                         return False
 
             elif opt == 'ignore': self.db.execute('INSERT INTO ' + table_name + ' ('+col+') VALUES ('+col_values+') ON DUPLICATE KEY IGNORE', tuple(row.values()))
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def put_single(self, table_name, row, check_field=None, opt=False, logger=None):
+    def put_single(self, table_name, row, check_field=None, opt=False, logger=None, commit=True):
         '''
         insert row into table in db, where:
             row is dictionary {'column': 'value', ...}
@@ -251,12 +251,12 @@ class dbapp():
                         return False
             elif opt == 'ignore': self.db.execute('INSERT INTO ' + table_name + ' ('+col+') VALUES (' + col_values + ') ON DUPLICATE KEY IGNORE ', tuple(row.values()))
             if not rid: rid = self.db.lastrowid
-            self.conn.commit()
+            if commit: self.conn.commit()
         except:
             if logger: logger.error('sql err \n' + str(row))
         return rid
     
-    def update_single(self, table_name, item_update, conditions=''):
+    def update_single(self, table_name, item_update, conditions='', commit=True):
         '''
         update item_update in table_name in db, where:
             item_update: {'colunm': 'value'} item to update
@@ -273,10 +273,10 @@ class dbapp():
         self.db.execute(query, (col_value_update + col_value_cond))
         if 'id' in conditions: rid = conditions['id']
         else: rid = None
-        self.conn.commit()
+        if commit: self.conn.commit()
         return rid
 
-    def update_all(self, table_name, item_update, conditions=''):
+    def update_all(self, table_name, item_update, conditions='', commit=True):
         '''
         update item_update in table_name in db, where:
             item_update: {'colunm': 'value'} item to update
@@ -292,9 +292,9 @@ class dbapp():
         else:
             query = 'UPDATE ' + table_name + ' SET ' + col_name_update
         self.db.execute(query, (col_value_update + col_value_cond))
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def update_list(self, table_name, item_update, conditions=''):
+    def update_list(self, table_name, item_update, conditions='', commit=True):
         '''
         update item_update in table_name in db, where:
             item_update: {'colunm': 'value'} item to update
@@ -310,7 +310,7 @@ class dbapp():
         else:
             query = 'UPDATE ' + table_name + ' SET ' + col_name_update
         self.db.execute(query, (col_value_update + col_value_cond))
-        self.conn.commit()
+        if commit: self.conn.commit()
 
 
     # def put_multi(self, table_name, columns, rows):
@@ -325,7 +325,7 @@ class dbapp():
     #     self.conn.commit()
 
 
-    def remove_multi(self, table_name, row_conditions):
+    def remove_multi(self, table_name, row_conditions, commit=True):
         '''
         remove list from table, where:
             column - column where rows items are ex. 'id'
@@ -336,9 +336,9 @@ class dbapp():
         for r in row_conditions:
             col_name_cond, col_value_cond = self.get_cols_for_select([r])
             self.db.execute('DELETE FROM ' + table_name + ' WHERE ' + col_name_cond, col_value_cond)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def remove_single(self, table_name, row_conditions):
+    def remove_single(self, table_name, row_conditions, commit=True):
         '''
         remove item_remove in table_name in db, where:
             row_conditions: {'colunm': 'value', ...} conditions of the row to remove
@@ -347,7 +347,7 @@ class dbapp():
         if not self.db: return False
         col_name_cond, col_value_cond = self.get_cols_for_select([row_conditions])
         self.db.execute('DELETE FROM ' + table_name + ' WHERE ' + col_name_cond, col_value_cond)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
     def get_all(self, table_name, name_column, conditions='', distinct=False, conditions_excl='', limit=None, order=None, asc=None):
         '''
@@ -681,18 +681,18 @@ class dbapp():
             col_values.append(cur_val)
         return (col[:-5], tuple(col_values))
 
-    def commit(self):
+    def commit(self, close=True):
         if not self.check_connection(): return False
         if not self.db: return False
         self.conn.commit()
-        self.conn.close()
+        if close: self.conn.close()
 
     def close(self):
         if not self.check_connection(): return False
         if not self.db: return False
         self.conn.close()
 
-    def delete_all(self, table_name):
+    def delete_all(self, table_name, commit=True):
         '''
         delete all from table:
         table_name - table name current
@@ -700,9 +700,9 @@ class dbapp():
         if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('DELETE FROM ' + table_name)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def delete_list(self, table_name, conditions={}):
+    def delete_list(self, table_name, conditions={}, commit=True):
         '''
         delete all from table:
         table_name - table name current
@@ -715,9 +715,9 @@ class dbapp():
             col, col_values = self.get_cols_for_update([conditions])
         if not col or not col_values: return False
         self.db.execute('DELETE FROM TABLE ' + table_name + ' WHERE ' + col, col_values)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def rename_table(self, table_name, table_name_new):
+    def rename_table(self, table_name, table_name_new, commit=True):
         '''
         rename table:
         table_name - table name current
@@ -726,9 +726,9 @@ class dbapp():
         if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('RENAME TABLE ' + table_name + ' TO ' + table_name_new)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def drop_table(self, table_name):
+    def drop_table(self, table_name, commit=True):
         '''
         rename table:
         table_name - table name to drop
@@ -736,9 +736,9 @@ class dbapp():
         if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('DROP TABLE ' + table_name)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def rename_column(self, table_name, column_cur, column_new):
+    def rename_column(self, table_name, column_cur, column_new, commit=True):
         '''
         rename column:
         table_name - table name
@@ -748,9 +748,9 @@ class dbapp():
         if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('ALTER TABLE ' + table_name + ' RENAME COLUMN ' + column_cur + ' TO ' + column_new)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
-    def drop_column(self, table_name, column_name):
+    def drop_column(self, table_name, column_name, commit=True):
         '''
         drop column:
         table_name - table name
@@ -759,7 +759,7 @@ class dbapp():
         if not self.check_connection(): return False
         if not self.db: return False
         self.db.execute('ALTER TABLE ' + table_name + ' DROP COLUMN ' + column_name)
-        self.conn.commit()
+        if commit: self.conn.commit()
 
 
 def get_file_rows_c(obj):
