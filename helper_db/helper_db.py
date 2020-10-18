@@ -137,6 +137,35 @@ class dbapp():
         if res: return res
         else: return ()
 
+    def put_multi_fast(self, table, cols, rows, duplicates=None, commit=True):
+        '''
+            # example:
+            table = 'table_name'
+            cols = ('col1', 'col2')
+            rows = [(a1 , b1),(a2 , b2),(a3 , b3)]
+            duplicates = "date=date, ticker_id=ticker_id"  # they should be made at the table ctreation
+            put_multi_fast(table='table', cols=('col1', 'col2'), rows=rows, duplicates=duplicates)
+        '''
+        
+        if not self.check_connection(): return False
+        if not self.db: return False
+
+        # '(%s, %s)'
+        patts = ['%s' for _ in rows[0]]
+        patt = '(' + ','.join(patts) + ')'
+
+        rq = 'INSERT INTO %s (%s) VALUES %s' % (
+            table,
+            ','.join(cols),
+            ','.join(patt for _ in rows)
+        )
+        if duplicates:
+            rq += ' ON DUPLICATE KEY UPDATE ' + duplicates + ';'
+
+        values = [_ for r in rows for _ in r]
+        self.db.execute(rq, values)
+        if commit: self.conn.commit()
+
     def put_multi(self, table_name, columns, rows, commit=True):
         '''
         insert list into table in db with single condition, where:
@@ -576,12 +605,13 @@ class dbapp():
         column names as string: 'a=%s, b=%s, ...'
         for sql request
         '''
-        #col = '=%s, '.join(rows)
-        l = []
-        for r in rows:
-            l.append('%s')
-        col = ', '.join(l)
-        return col
+        # #col = '=%s, '.join(rows)
+        # l = []
+        # for r in rows:
+        #     l.append('%s')
+        # col = ', '.join(l)
+        # return col
+        return ', '.join('%s' for _ in rows)
 
     def get_set(self, rows):
         '''
