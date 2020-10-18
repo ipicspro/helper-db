@@ -140,19 +140,21 @@ class dbapp():
     def put_multi_fast(self, table, cols, rows, duplicates=None, commit=True):
         '''
             # example:
-            table = 'table_name'
-            cols = ('col1', 'col2')
+            cols = ('col1', 'col2') or ('col1',)  # only tuple
             rows = [(a1 , b1),(a2 , b2),(a3 , b3)]
-            duplicates = "date=date, ticker_id=ticker_id"  # they should be made at the table ctreation
-            put_multi_fast(table='table', cols=('col1', 'col2'), rows=rows, duplicates=duplicates)
+            duplicates = "name=name, ticker_id=ticker_id"  # they should be made at the table creation (name_ticker_id)
+            put_multi_fast('table',('col1', 'col2'), rows)
         '''
         
         if not self.check_connection(): return False
         if not self.db: return False
 
         # '(%s, %s)'
-        patts = ['%s' for _ in rows[0]]
-        patt = '(' + ','.join(patts) + ')'
+        if type(rows[0]) == str:
+            patt = '(%s)'
+        else:
+            patts = ['%s' for _ in rows[0]]
+            patt = '(' + ','.join(patts) + ')'
 
         rq = 'INSERT INTO %s (%s) VALUES %s' % (
             table,
@@ -162,7 +164,11 @@ class dbapp():
         if duplicates:
             rq += ' ON DUPLICATE KEY UPDATE ' + duplicates + ';'
 
-        values = [_ for r in rows for _ in r]
+        if type(rows[0]) == str:
+            values = [_ for _ in rows]
+        else:
+            values = [_ for r in rows for _ in r]
+
         self.db.execute(rq, values)
         if commit: self.conn.commit()
 
