@@ -21,10 +21,11 @@ class dbapp():
     set_character_set = None
     DictCursor = None
     db = ''
-    def __init__(self, dbset='web', DictCursor=False, settings=None):
+    def __init__(self, dbset='web', DictCursor=False, settings=None, alt=False):
         '''
         dbname: web|scrap
         DictCursor=True - to give col names with result
+        alt=False|True - if True -> SET FOREIGN_KEY_CHECKS = 0;
         '''
         # if not settings:
         #     try: from .settings import settings
@@ -38,6 +39,8 @@ class dbapp():
             self.host = settings.DATABASES[dbset]['HOST']
             self.port = settings.DATABASES[dbset]['PORT']
             self.init_command = settings.DATABASES[dbset]['init_command']
+            if alt:
+                self.init_command = settings.DATABASES[dbset]['init_command_alt']
             self.use_unicode = settings.DATABASES[dbset]['use_unicode']
             self.set_character_set = settings.DATABASES[dbset]['set_character_set']
             self.DictCursor = DictCursor
@@ -51,14 +54,14 @@ class dbapp():
 
     def open(self):
         i = 0
-        num = 30
+        num = 100
         while i < num:
             i += 1
             try:
                 self.conn = Database.connect(user=self.user, passwd=self.passwd, host=self.host, db=self.dbname, port=int(self.port), init_command=self.init_command, use_unicode=self.use_unicode)
                 break
             except:
-                time.sleep(60)
+                time.sleep(10)
                 continue
 
             return False
@@ -75,24 +78,25 @@ class dbapp():
         '''
         check connection & connect if possible using some approches
         '''
-        # check if connected
-        i = 0
-        num = 30
-        while i < num:
-            i += 1
-            try:
-                self.conn.ping(True)
-                return True
-            except:
-                time.sleep(60)
-                continue
 
-            return False
-
-        # check if opened
-        if not self.conn.open:
+        # check if connection is opened
+        if self.conn.open:
+            # then check if connected
             i = 0
-            num = 3
+            num = 30
+            while i < num:
+                i += 1
+                try:
+                    self.conn.ping(True)
+                    return True
+                except:
+                    time.sleep(10)
+                    continue
+
+                return False
+        else:
+            i = 0
+            num = 30
             while i < num:
                 i += 1
                 try:
@@ -102,7 +106,6 @@ class dbapp():
                     continue
                 if self.conn.open: return True
             return False
-        else: return True
 
 
     def check_db(self, create=None):
