@@ -291,8 +291,8 @@ class dbapp():
             elif opt == 'ignore': self.db.execute('INSERT INTO ' + table_name + ' ('+col+') VALUES (' + col_values + ') ON DUPLICATE KEY IGNORE ', tuple(row.values()))
             if not rid: rid = self.db.lastrowid
             if commit: self.conn.commit()
-        except:
-            if logger: logger.error('sql err \n' + str(row))
+        except Exception as e:
+            if logger: logger.error(f"sql err: {e} \n{str(row)}")
         return rid
     
     def update_single(self, table_name, item_update, conditions='', commit=True):
