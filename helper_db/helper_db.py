@@ -148,7 +148,7 @@ class dbapp():
             self.cursor = self.conn.cursor()
         self.db = self.cursor
 
-    def close(self):
+    def close(self, logger=None):
 
         if not self.conn or not self.conn.open:
             return False
@@ -170,12 +170,11 @@ class dbapp():
         if not self.cursor: return False
         self.conn.close()
 
-    def commit(self, close=False):
-        # if not self.get_connection(): return False
-        # if not self.cursor: return False
-        # if not self.conn: return False
-        if self.conn.open:
-            self.conn.commit()
+    def commit(self, close=True):
+        if not self.get_connection(): return False
+        if not self.cursor: return False
+        if not self.conn: return False
+        self.conn.commit()
         if close:
             # self.conn.close()
             self.close()
@@ -188,18 +187,21 @@ class dbapp():
     #         # self.conn.close()
     #         self.close()
 
-    def check_db(self, create=None):
+    def check_db(self, create=None, logger=None):
         '''
         used only in lns project
         make table if it is not exist yet: contents
         status:   0 - not scraped, 1 - scraped
         '''
+
+        if not self.get_connection(): return False
+        if not self.cursor: return False
         if create:
             self.cursor.execute(create)
         else:
             self.cursor.execute('CREATE TABLE IF NOT EXISTS queue (id INT(11) AUTO_INCREMENT PRIMARY KEY, url_id INT(11) NOT NULL, url VARCHAR(255), company_id INT(11) NOT NULL, menu_type INT(11), url_type INT(11), open_hours VARCHAR(64), lng VARCHAR(3), status BOOLEAN NOT NULL DEFAULT 0)')
         self.commit()
-        self.close()
+        # self.close()
 
     def raw(self, raw, prms=None, commit=True):
         '''
@@ -219,7 +221,7 @@ class dbapp():
 
         if commit:
             self.commit()
-        self.close()
+            # self.close()
         if res: return res
         else: return ()
 
@@ -258,7 +260,7 @@ class dbapp():
         self.cursor.execute(rq, values)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def put_multi(self, table_name, columns, rows, commit=True):
         '''
@@ -274,7 +276,7 @@ class dbapp():
             self.cursor.execute('INSERT INTO ' + table_name + ' (' + ', '.join(columns) + ') VALUES (' + cols + ')', tuple(r))  # json.dumps(rows)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def put_list(self, table_name, rows, check_field=None, opt=False, commit=True):
         '''
@@ -331,14 +333,15 @@ class dbapp():
                         rid = rid[0]['id']
                         self.update_single(table_name, row, {'id': rid})
                     else:
-                        self.close()
+                        if commit:
+                            self.close()
                         return False
 
             elif opt == 'ignore': self.cursor.execute('INSERT INTO ' + table_name + ' ('+col+') VALUES ('+col_values+') ON DUPLICATE KEY IGNORE', tuple(row.values()))
 
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def put_single(self, table_name, row, check_field=None, opt=False, logger=None, commit=True):
         '''
@@ -383,7 +386,8 @@ class dbapp():
                         rid = rid[0]['id']
                         self.update_single(table_name, row, {'id': rid})
                     else:
-                        self.close()
+                        if commit:
+                            self.close()
                         return False
             
             elif opt == 'ignore': self.cursor.execute('INSERT INTO ' + table_name + ' ('+col+') VALUES (' + col_values + ') ON DUPLICATE KEY IGNORE ', tuple(row.values()))
@@ -395,7 +399,8 @@ class dbapp():
         except Exception as e:
             if logger: logger.error(f"sql err: {e} \n{str(row)}")
 
-        self.close()
+        # if commit:
+        #     self.close()
 
         return rid
     
@@ -418,7 +423,7 @@ class dbapp():
         else: rid = None
         if commit:
             self.commit()
-        self.close()
+            # self.close()
         return rid
 
     def update_all(self, table_name, item_update, conditions='', commit=True):
@@ -439,7 +444,7 @@ class dbapp():
         self.cursor.execute(query, (col_value_update + col_value_cond))
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def update_list(self, table_name, item_update, conditions='', commit=True):
         '''
@@ -459,7 +464,7 @@ class dbapp():
         self.cursor.execute(query, (col_value_update + col_value_cond))
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
 
     # def put_multi(self, table_name, columns, rows):
@@ -472,7 +477,7 @@ class dbapp():
     #     for r in rows:
     #         self.cursor.execute('INSERT INTO ' + table_name + ' (' + ', '.join(columns) + ') VALUES (' + cols + ')', tuple(r))  # json.dumps(rows)
     #     self.commit()
-    #     self.close()
+    #     # self.close()
 
 
     def remove_multi(self, table_name, row_conditions, commit=True):
@@ -488,7 +493,7 @@ class dbapp():
             self.cursor.execute('DELETE FROM ' + table_name + ' WHERE ' + col_name_cond, col_value_cond)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def remove_single(self, table_name, row_conditions, commit=True):
         '''
@@ -501,7 +506,7 @@ class dbapp():
         self.cursor.execute('DELETE FROM ' + table_name + ' WHERE ' + col_name_cond, col_value_cond)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def get_all(self, table_name, name_column, conditions='', distinct=False, conditions_excl='', limit=None, order=None, asc=None):
         '''
@@ -856,7 +861,7 @@ class dbapp():
         self.cursor.execute('DELETE FROM ' + table_name)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def delete_list(self, table_name, conditions={}, commit=True):
         '''
@@ -873,7 +878,7 @@ class dbapp():
         self.cursor.execute('DELETE FROM TABLE ' + table_name + ' WHERE ' + col, col_values)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def rename_table(self, table_name, table_name_new, commit=True):
         '''
@@ -886,7 +891,7 @@ class dbapp():
         self.cursor.execute('RENAME TABLE ' + table_name + ' TO ' + table_name_new)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def drop_table(self, table_name, commit=True):
         '''
@@ -898,7 +903,7 @@ class dbapp():
         self.cursor.execute('DROP TABLE ' + table_name)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def rename_column(self, table_name, column_cur, column_new, commit=True):
         '''
@@ -912,7 +917,7 @@ class dbapp():
         self.cursor.execute('ALTER TABLE ' + table_name + ' RENAME COLUMN ' + column_cur + ' TO ' + column_new)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
     def drop_column(self, table_name, column_name, commit=True):
         '''
@@ -925,7 +930,7 @@ class dbapp():
         self.cursor.execute('ALTER TABLE ' + table_name + ' DROP COLUMN ' + column_name)
         if commit:
             self.commit()
-        self.close()
+            # self.close()
 
 
 def get_file_rows_c(obj):
