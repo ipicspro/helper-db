@@ -150,13 +150,15 @@ class dbapp():
 
     def close(self, logger=None):
 
-        if not self.conn or not self.conn.open:
+        # if not self.conn or not self.conn.open:
+        if not self.conn:
             return False
 
         # if not self.cursor:
         #     return False
 
         try:
+            self.cursor.close()
             self.conn.close()
             return True
 
