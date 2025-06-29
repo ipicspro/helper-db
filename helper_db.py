@@ -150,13 +150,15 @@ class dbapp():
 
     def close(self, logger=None):
 
-        if not self.conn or not self.conn.open:
+        # if not self.conn or not self.conn.open:
+        if not self.conn:
             return False
 
         # if not self.cursor:
         #     return False
 
         try:
+            self.cursor.close()
             self.conn.close()
             return True
 
@@ -174,6 +176,7 @@ class dbapp():
         if not self.get_connection(): return False
         if not self.cursor: return False
         if not self.conn: return False
+        if not self.cursor.connection.open: return False
         self.conn.commit()
         if close:
             # self.conn.close()
@@ -210,11 +213,13 @@ class dbapp():
         if not raw: return False
         if not self.get_connection(): return False
         if not self.cursor: return False
+        if not self.cursor.connection.open: return False
         res = None
         if prms: self.cursor.execute(raw, prms)
         else: self.cursor.execute(raw)
         if 'SELECT' in raw:
             res = self.cursor.fetchall()
+            self.close()
             commit = False
         elif 'INSERT' in raw or 'UPDATE' in raw:
             res = self.cursor.lastrowid
