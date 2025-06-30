@@ -55,8 +55,9 @@ class dbapp():
     use_unicode = None
     set_character_set = None
     DictCursor = None
-    cursor = ''
-    db = ''  # same as cursor for compatibility
+    conn = None
+    cursor = None
+    db = None  # same as cursor for compatibility
 
     def __init__(self, dbset='web', DictCursor=False, settings=None, alt=False, logger=None):
         '''
@@ -98,7 +99,7 @@ class dbapp():
         '''
 
         # check if connection is opened
-        if self.conn.open:
+        if self.conn and self.conn.open:
             # then check if connected
             i = 0
             num = 30
@@ -106,26 +107,22 @@ class dbapp():
                 i += 1
                 try:
                     self.conn.ping(True)
-                    return True
+                    if self.conn.open:
+                        return True
                 except:
+                    self.logger.error(f"sql err can't ping server: {e}")
+                    self.close()
                     time.sleep(10)
+                    res = self.open()
                     continue
 
             return False
         
         # try to open
         else:
-            i = 0
-            num = 30
-            while i < num:
-                i += 1
-                try:
-                    self.open()
-                except:
-                    time.sleep(10)
-                    continue
-                if self.conn.open:
-                    return True
+            res = self.open()
+            if res:
+                return True
             return False
 
     def open(self):
@@ -135,20 +132,33 @@ class dbapp():
             i += 1
             try:
                 self.conn = Database.connect(user=self.user, passwd=self.passwd, host=self.host, db=self.dbname, port=int(self.port), init_command=self.init_command, use_unicode=self.use_unicode)
-                break
+                if self.conn.open:
+                    break
+                else:
+                    self.logger.error(f"sql err can't establish connection: {e}")
+                    time.sleep(10)
+                    continue
             except:
+                self.logger.error(f"sql err can't establish connection: {e}")
                 time.sleep(10)
                 continue
 
+        if not self.conn or not self.conn.open:
+            # failed to open connection
             return False
 
-        self.conn.set_character_set(self.set_character_set)
+        # setup more
+        if self.set_character_set:
+            self.conn.set_character_set(self.set_character_set)
 
         if self.DictCursor:
             self.cursor = self.conn.cursor(Database.cursors.DictCursor)
         else:
             self.cursor = self.conn.cursor()
+        
         self.db = self.cursor
+
+        return True
 
     def close(self, logger=None):
 
@@ -160,8 +170,12 @@ class dbapp():
         #     return False
 
         try:
-            self.cursor.close()
+            if self.cursor and self.cursor.connection and self.cursor.connection.open:
+                self.cursor.close()
+                self.cursor = None
+                self.db = self.cursor
             self.conn.close()
+            self.conn = None
             return True
 
         except Exception as e:
@@ -171,11 +185,6 @@ class dbapp():
                 self.logger.error(f"sql connection closing err: {e}")
         
         return False
-
-    def close0(self):
-        if not self.get_connection(): return False
-        if not self.cursor: return False
-        self.conn.close()
 
     def commit(self, close=True):
         if not self.get_connection(): return False
