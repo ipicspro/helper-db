@@ -55,7 +55,7 @@ class dbapp():
     set_character_set = None
     DictCursor = None
     cursor = ''
-    db = ''  # same as cursor for compatibility
+    db = ''  # same as cursor for compatibility (deprecated from 2025)
 
     def __init__(self, dbset='web', DictCursor=False, settings=None, alt=False):
         '''
