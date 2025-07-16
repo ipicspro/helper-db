@@ -109,7 +109,7 @@ class dbapp():
                     self.conn.ping(True)
                     if self.conn.open:
                         return True
-                except:
+                except Exception as e:
                     self.logger.error(f"sql err can't ping server: {e}")
                     self.close()
                     time.sleep(10)
@@ -135,10 +135,10 @@ class dbapp():
                 if self.conn.open:
                     break
                 else:
-                    self.logger.error(f"sql err can't establish connection: {e}")
+                    self.logger.error(f"sql err can't establish connection: {self.dbname}/{self.user}")
                     time.sleep(10)
                     continue
-            except:
+            except Exception as e:
                 self.logger.error(f"sql err can't establish connection: {e}")
                 time.sleep(10)
                 continue
